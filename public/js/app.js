@@ -2008,7 +2008,27 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 var pc = new RTCPeerConnection();
+var seconds = 0;
+var streams;
 
 pc.onaddstream = function (obj) {
   console.log('gg', obj);
@@ -2022,7 +2042,9 @@ pc.onaddstream = function (obj) {
     return {
       video: {},
       text: '',
-      messages: []
+      messages: [],
+      file: '',
+      seconds: 0
     };
   },
   computed: {
@@ -2031,22 +2053,55 @@ pc.onaddstream = function (obj) {
     }
   },
   methods: {
-    postMessage: function postMessage() {
+    closeCall: function closeCall() {
+      streams.getTracks().forEach(function (track) {
+        track.stop();
+      });
+      pc.close();
+    },
+    timer: function timer() {
+      seconds = 0;
+      setInterval(function () {
+        seconds = seconds + 1;
+        this.seconds = seconds + 1;
+        console.log('time', seconds);
+      }, 1000);
+    },
+    onFileChange: function onFileChange() {
+      this.file = this.$refs.file.files[0];
+    },
+    uploadFile: function uploadFile() {
       var _this = this;
+
+      var formData = new FormData();
+      formData.append('file', this.file);
+      axios.post('/chatSend/' + this.chat_id, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }).then(function (_ref) {
+        var data = _ref.data;
+        console.log(_this.messages);
+
+        _this.messages.push(data);
+      });
+    },
+    postMessage: function postMessage() {
+      var _this2 = this;
 
       axios.post('/chatSend/' + this.chat_id, {
         message: this.text
-      }).then(function (_ref) {
-        var data = _ref.data;
+      }).then(function (_ref2) {
+        var data = _ref2.data;
 
-        _this.messages.push(_this.text);
+        _this2.messages.push(data);
 
         console.log('send text', data);
-        _this.text = '';
+        _this2.text = '';
       });
     },
     startVideoCallToUser: function startVideoCallToUser() {
-      var _this2 = this;
+      var _this3 = this;
 
       var errorHandler = function errorHandler(err) {
         console.error('error', err);
@@ -2054,9 +2109,13 @@ pc.onaddstream = function (obj) {
 
       var id = this.chat_id;
       navigator.mediaDevices.getUserMedia({
-        video: true
+        video: true,
+        audio: true
       }).then(function (stream) {
-        // pc.onaddstream = e => video.src = URL.createObjectURL(e.stream);
+        _this3.timer(); // pc.onaddstream = e => video.src = URL.createObjectURL(e.stream);
+
+
+        streams = stream;
         stream.getTracks().forEach(function (track) {
           console.log(track, stream);
           pc.addTrack(track, stream);
@@ -2066,39 +2125,67 @@ pc.onaddstream = function (obj) {
             console.log('offer', pc.localDescription);
             axios.post('/chatSend/' + id, {
               video: JSON.stringify(pc.localDescription)
-            }).then(function (_ref2) {
-              var data = _ref2.data;
+            }).then(function (_ref3) {
+              var data = _ref3.data;
               console.log('send');
             });
           }, errorHandler);
-        }, errorHandler); // console.log(stream)
-        // this.video.srcObject = stream;
+        }, errorHandler);
+        _this3.$refs.video.srcObject = stream;
+      });
+    },
+    startAudioCallToUser: function startAudioCallToUser() {
+      var _this4 = this;
 
-        console.log(stream);
-        _this2.$refs.video.srcObject = stream; // this.video.play();
-        // console.log(this.video, pc);
+      var errorHandler = function errorHandler(err) {
+        console.error('error', err);
+      };
+
+      var id = this.chat_id;
+      navigator.mediaDevices.getUserMedia({
+        audio: true
+      }).then(function (stream) {
+        _this4.timer(); // pc.onaddstream = e => video.src = URL.createObjectURL(e.stream);
+
+
+        streams = stream;
+        stream.getTracks().forEach(function (track) {
+          console.log(track, stream);
+          pc.addTrack(track, stream);
+        });
+        pc.createOffer(function (offer) {
+          pc.setLocalDescription(offer, function () {
+            console.log('offer', pc.localDescription);
+            axios.post('/chatSend/' + id, {
+              video: JSON.stringify(pc.localDescription)
+            }).then(function (_ref4) {
+              var data = _ref4.data;
+              console.log('send');
+            });
+          }, errorHandler);
+        }, errorHandler);
+        _this4.$refs.video.srcObject = stream;
       });
     }
   },
   created: function created() {
-    var _this3 = this;
+    var _this5 = this;
 
     var id = this.chat_id;
-    axios.get('/chatGet/' + this.chat_id).then(function (_ref3) {
-      var data = _ref3.data;
+    axios.get('/chatGet/' + this.chat_id).then(function (_ref5) {
+      var data = _ref5.data;
       console.log(data);
-      _this3.messages = data;
+      _this5.messages = data;
     });
     console.log("chat.".concat(this.user_id, ".").concat(this.chat_id)); // Registered client on public channel to listen to MessageSent event
 
-    Echo["private"]("chat.".concat(this.user_id, ".").concat(this.chat_id)).listen('ChatMessage', function (_ref4) {
-      var message = _ref4.message;
-      console.log('omg', message);
+    Echo["private"]("chat.".concat(this.user_id, ".").concat(this.chat_id)).listen('ChatMessage', function (_ref6) {
+      var message = _ref6.message;
 
-      _this3.messages.push(message);
+      _this5.messages.push(message);
     });
-    Echo["private"]("video.".concat(this.user_id, ".").concat(this.chat_id)).listen('VideoMessage', function (_ref5) {
-      var message = _ref5.message;
+    Echo["private"]("video.".concat(this.user_id, ".").concat(this.chat_id)).listen('VideoMessage', function (_ref7) {
+      var message = _ref7.message;
       console.log('video', message); // this.$refs.video.srcObject = message
       // this.messages.push(message);
 
@@ -2111,11 +2198,10 @@ pc.onaddstream = function (obj) {
       pc.setRemoteDescription(new RTCSessionDescription(offer), function () {
         pc.createAnswer(function (answer) {
           pc.setLocalDescription(answer, function () {
-            console.log('answer 2');
             axios.post('/chatSend/' + id, {
               video: JSON.stringify(pc.localDescription)
-            }).then(function (_ref6) {
-              var data = _ref6.data;
+            }).then(function (_ref8) {
+              var data = _ref8.data;
               console.log('send 23');
             });
           }, errorHandler);
@@ -49480,7 +49566,7 @@ var render = function() {
       "div",
       [
         _vm._l(_vm.messages, function(message) {
-          return _c("p", [_vm._v(_vm._s(message))])
+          return _c("p", [_vm._v(_vm._s(message.content))])
         }),
         _vm._v(" "),
         _c("input", {
@@ -49559,7 +49645,67 @@ var render = function() {
         _c("span", { staticClass: "fa fa-video-camera" }),
         _vm._v(" Video Call\n    ")
       ]
-    )
+    ),
+    _vm._v(" "),
+    _c(
+      "button",
+      {
+        staticClass: "btn btn-warning btn-sm pull-right",
+        attrs: { type: "button" },
+        on: {
+          click: function($event) {
+            return _vm.startAudioCallToUser(2)
+          }
+        }
+      },
+      [
+        _c("span", { staticClass: "fa fa-video-camera" }),
+        _vm._v(" Audio Call\n    ")
+      ]
+    ),
+    _vm._v(" "),
+    _c(
+      "button",
+      {
+        staticClass: "btn btn-warning btn-sm pull-right",
+        attrs: { type: "button" },
+        on: {
+          click: function($event) {
+            return _vm.closeCall(2)
+          }
+        }
+      },
+      [
+        _c("span", { staticClass: "fa fa-video-camera" }),
+        _vm._v(" End Call\n    ")
+      ]
+    ),
+    _vm._v(" "),
+    _c("div", { staticClass: "card card-default" }, [
+      _c("div", { staticClass: "card-body" }, [
+        _c("div", { staticClass: "row" }, [
+          _c("div", { staticClass: "col-md-9" }, [
+            _c("input", {
+              ref: "file",
+              staticClass: "form-control",
+              attrs: { type: "file", id: "file" },
+              on: { change: _vm.onFileChange }
+            })
+          ]),
+          _vm._v(" "),
+          _c("div", { staticClass: "col-md-3" }, [
+            _c(
+              "button",
+              {
+                staticClass: "btn btn-success btn-block",
+                on: { click: _vm.uploadFile }
+              },
+              [_vm._v("Upload File")]
+            )
+          ])
+        ])
+      ])
+    ])
   ])
 }
 var staticRenderFns = []
@@ -62238,8 +62384,8 @@ component.options.__file = "resources/js/components/VideoChat.vue"
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! /var/www/www-root/data/www/327901-cw97605.tmweb.ru/resources/js/app.js */"./resources/js/app.js");
-module.exports = __webpack_require__(/*! /var/www/www-root/data/www/327901-cw97605.tmweb.ru/resources/sass/app.scss */"./resources/sass/app.scss");
+__webpack_require__(/*! D:\server\OSPanel\domains\chat\resources\js\app.js */"./resources/js/app.js");
+module.exports = __webpack_require__(/*! D:\server\OSPanel\domains\chat\resources\sass\app.scss */"./resources/sass/app.scss");
 
 
 /***/ }),

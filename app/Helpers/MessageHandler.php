@@ -30,15 +30,17 @@ class MessageHandler {
         $message = null;
         $user = null;
 
+
         if(array_key_exists('content', $attribute))
         {
-            $message = new Message(['content' => $attribute['content']]);
+            $message = new Message(['content' => $attribute['content'], 'type' => $attribute['type']]);
         }
 
         if(array_key_exists('to_id', $attribute))
         {
             $user = User::find($attribute['to_id']);
         }
+
 
         return [$message , $user];
     }

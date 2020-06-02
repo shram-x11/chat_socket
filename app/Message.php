@@ -12,7 +12,7 @@ class Message extends Model
     use MessageStatus, QueryMessages ,TaggableMessage;
 
     protected $fillable = [
-        'from_id', 'to_id', 'content', 'state', 'root_id'
+        'from_id', 'to_id', 'content', 'state', 'root_id', 'type',
     ];
 
     /**
@@ -50,6 +50,7 @@ class Message extends Model
             'created_at' => $message->created_at,
             'updated_at' => $message->updated_at,
             'state' => $message->state,
+            'type' => $message->type,
         ]);
     }
 }

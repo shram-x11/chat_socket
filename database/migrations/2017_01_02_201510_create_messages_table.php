@@ -19,6 +19,7 @@ class CreateMessagesTable extends Migration
             $table->integer('root_id')->unsigned()->nullable();
             // $table->text('title');
             $table->text('content');
+            $table->string('type');
             $table->integer('state')->default(0);
 
             $table->integer('archived_at_from')->default(0);

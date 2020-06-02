@@ -76,10 +76,9 @@ class HomeController extends Controller
         $userB = User::find($id);
         $messagesA = $userA->sent()->to($userB)->get();
         $messagesB = $userA->received()->from($userB)->get();
-        $messages = $messagesA->merge($messagesB)->sortBy('id')->pluck('content');
+        $messages = $messagesA->merge($messagesB)->sortBy('id');
 
         return $messages;
-
 
 
     }
@@ -88,12 +87,26 @@ class HomeController extends Controller
     {
         $receiver = User::find($chat_id);
 
-        $messageData = [
-            'content' => $request->message, // the content of the message
-            'to_id' => $receiver->getKey(), // Who should receive the message
-        ];
+        if ($request->file()) {
+            $path = $request->file('file')->store('file');
+            $messageData = [
+                'content' => $path, // the content of the message
+                'to_id' => $receiver->getKey(), // Who should receive the message
+                'type' => 'file'
+            ];
+        } else {
+            $messageData = [
+                'content' => $request->message, // the content of the message
+                'to_id' => $receiver->getKey(), // Who should receive the message
+                'type' => 'text'
+            ];
+        }
+
+
+
 
         list($message, $user) = User::createFromRequest($messageData);
+
 
         $sender = User::find(Auth::user()->id);
 
@@ -104,10 +117,9 @@ class HomeController extends Controller
             $sent = $sender->writes($message)
                 ->to($user)
                 ->send();
-            event(new ChatMessage($request->message, $chat_id, $sender->id));
+            event(new ChatMessage($message, $chat_id, $sender->id));
         }
-//        event(new ChatMessage($request->message));
-        return $request->message;
+        return response()->json($message);
 
 
     }

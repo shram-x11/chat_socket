@@ -99,6 +99,7 @@ trait MessageAccessible
                 {
                     foreach($this->cc as $to)
                     {
+                        print_r($this->message);
                         $newMessage = Message::copyFrom($this->message);
                         $newMessage->setReceiverById($to)->save();
                     }
