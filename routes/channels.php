@@ -17,9 +17,9 @@ Broadcast::channel('App.User.{id}', function ($user, $id) {
 
 
 Broadcast::routes(['middleware' => ['web', 'auth']]);
-Broadcast::channel('chat.{chat_id}.{user_id}', function ($user) {
+Broadcast::channel('chat.{chat_id}.{user_id}', function () {
     return true;
 });
-Broadcast::channel('video.{chat_id}.{user_id}', function ($user) {
+Broadcast::channel('video.{chat_id}.{user_id}', function () {
     return true;
 });

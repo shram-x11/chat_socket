@@ -1,10 +1,10 @@
 {
-	"authHost": "http://localhost:8000",
+	"authHost": "http://92.53.107.149:80",
 	"authEndpoint": "/broadcasting/auth",
 	"clients": [
 		{
-			"appId": "392b6b3e3a7edd4c",
-			"key": "41ed7e723d882849d9936a450ee948ce"
+			"appId": "6bc1698d845ee314",
+			"key": "9c92968ac4052ca975be10167a76c8a7"
 		}
 	],
 	"database": "redis",
@@ -14,14 +14,14 @@
 			"databasePath": "/database/laravel-echo-server.sqlite"
 		}
 	},
-	"devMode": false,
+	"devMode": true,
 	"host": null,
 	"port": "6001",
-	"protocol": "http",
+	"protocol": "https",
 	"socketio": {},
 	"secureOptions": 67108864,
-	"sslCertPath": "",
-	"sslKeyPath": "",
+	"sslCertPath": "/var/www/httpd-cert/www-root/327901-cw97605.tmweb.ru_le1.crt",
+	"sslKeyPath": "/var/www/httpd-cert/www-root/327901-cw97605.tmweb.ru_le1.key",
 	"sslCertChainPath": "",
 	"sslPassphrase": "",
 	"subscribers": {

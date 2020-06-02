@@ -62238,8 +62238,8 @@ component.options.__file = "resources/js/components/VideoChat.vue"
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! D:\server\OSPanel\domains\chat\resources\js\app.js */"./resources/js/app.js");
-module.exports = __webpack_require__(/*! D:\server\OSPanel\domains\chat\resources\sass\app.scss */"./resources/sass/app.scss");
+__webpack_require__(/*! /var/www/www-root/data/www/327901-cw97605.tmweb.ru/resources/js/app.js */"./resources/js/app.js");
+module.exports = __webpack_require__(/*! /var/www/www-root/data/www/327901-cw97605.tmweb.ru/resources/sass/app.scss */"./resources/sass/app.scss");
 
 
 /***/ }),
