@@ -2026,14 +2026,43 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
-var pc = new RTCPeerConnection();
+//
+//
+//
+//
+//
+//
+//
 var seconds = 0;
+var timer;
+var pc = new RTCPeerConnection();
 var streams;
+var localStream;
+var offerOptions = {
+  offerToReceiveAudio: 1,
+  offerToReceiveVideo: 1
+};
+var connect = false;
 
-pc.onaddstream = function (obj) {
-  console.log('gg', obj);
-  var video = document.getElementById('localVideo');
-  video.srcObject = obj.stream;
+pc.onaddstream = function (event) {
+  document.getElementById("localVideo").srcObject = event.stream;
+}; // pc.ontrack = function (event) {
+// 	document.getElementById("localVideo").srcObject = event.streams[0];
+// 	// document.getElementById("hangup-button").disabled = false;
+// 	console.log('event', event.streams)
+// };
+
+
+pc.onconnectionstatechange = function (event) {
+  console.log('state', pc.connectionState);
+
+  if (pc.connectionState == 'connected') {
+    timer = setInterval(function () {
+      seconds = seconds + 1;
+      console.log('time', seconds);
+    }, 1000);
+    timer();
+  }
 };
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -2054,24 +2083,29 @@ pc.onaddstream = function (obj) {
   },
   methods: {
     closeCall: function closeCall() {
+      var _this = this;
+
       streams.getTracks().forEach(function (track) {
         track.stop();
       });
       pc.close();
-    },
-    timer: function timer() {
+      axios.post('/chatSend/' + this.chat_id, {
+        message: 'Звонок длительностью ' + seconds + 'с'
+      }).then(function (_ref) {
+        var data = _ref.data;
+
+        _this.messages.push(data);
+
+        console.log('send close', data);
+      });
+      clearInterval(timer);
       seconds = 0;
-      setInterval(function () {
-        seconds = seconds + 1;
-        this.seconds = seconds + 1;
-        console.log('time', seconds);
-      }, 1000);
     },
     onFileChange: function onFileChange() {
       this.file = this.$refs.file.files[0];
     },
     uploadFile: function uploadFile() {
-      var _this = this;
+      var _this2 = this;
 
       var formData = new FormData();
       formData.append('file', this.file);
@@ -2079,117 +2113,63 @@ pc.onaddstream = function (obj) {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
-      }).then(function (_ref) {
-        var data = _ref.data;
-        console.log(_this.messages);
+      }).then(function (_ref2) {
+        var data = _ref2.data;
+        console.log(_this2.messages);
 
-        _this.messages.push(data);
+        _this2.messages.push(data);
       });
     },
     postMessage: function postMessage() {
-      var _this2 = this;
+      var _this3 = this;
 
       axios.post('/chatSend/' + this.chat_id, {
         message: this.text
-      }).then(function (_ref2) {
-        var data = _ref2.data;
+      }).then(function (_ref3) {
+        var data = _ref3.data;
 
-        _this2.messages.push(data);
+        _this3.messages.push(data);
 
         console.log('send text', data);
-        _this2.text = '';
+        _this3.text = '';
       });
     },
     startVideoCallToUser: function startVideoCallToUser() {
-      var _this3 = this;
-
-      var errorHandler = function errorHandler(err) {
-        console.error('error', err);
-      };
-
-      var id = this.chat_id;
-      navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true
-      }).then(function (stream) {
-        _this3.timer(); // pc.onaddstream = e => video.src = URL.createObjectURL(e.stream);
-
-
-        streams = stream;
-        stream.getTracks().forEach(function (track) {
-          console.log(track, stream);
-          pc.addTrack(track, stream);
-        });
-        pc.createOffer(function (offer) {
-          pc.setLocalDescription(offer, function () {
-            console.log('offer', pc.localDescription);
-            axios.post('/chatSend/' + id, {
-              video: JSON.stringify(pc.localDescription)
-            }).then(function (_ref3) {
-              var data = _ref3.data;
-              console.log('send');
-            });
-          }, errorHandler);
-        }, errorHandler);
-        _this3.$refs.video.srcObject = stream;
-      });
+      this.openCamera(); // this.sendOffer();
     },
     startAudioCallToUser: function startAudioCallToUser() {
-      var _this4 = this;
-
-      var errorHandler = function errorHandler(err) {
-        console.error('error', err);
-      };
-
+      this.openAudio();
+    },
+    sendOffer: function sendOffer() {
       var id = this.chat_id;
-      navigator.mediaDevices.getUserMedia({
-        audio: true
-      }).then(function (stream) {
-        _this4.timer(); // pc.onaddstream = e => video.src = URL.createObjectURL(e.stream);
-
-
-        streams = stream;
-        stream.getTracks().forEach(function (track) {
-          console.log(track, stream);
-          pc.addTrack(track, stream);
+      pc.createOffer(offerOptions).then(function (offer) {
+        return pc.setLocalDescription(offer);
+      }).then(function () {
+        axios.post('/chatSend/' + id, {
+          video: JSON.stringify(pc.localDescription),
+          action: 'offer'
+        }).then(function (_ref4) {
+          var data = _ref4.data;
+          console.log('send offer');
         });
-        pc.createOffer(function (offer) {
-          pc.setLocalDescription(offer, function () {
-            console.log('offer', pc.localDescription);
-            axios.post('/chatSend/' + id, {
-              video: JSON.stringify(pc.localDescription)
-            }).then(function (_ref4) {
-              var data = _ref4.data;
-              console.log('send');
-            });
-          }, errorHandler);
-        }, errorHandler);
-        _this4.$refs.video.srcObject = stream;
       });
-    }
-  },
-  created: function created() {
-    var _this5 = this;
-
-    var id = this.chat_id;
-    axios.get('/chatGet/' + this.chat_id).then(function (_ref5) {
-      var data = _ref5.data;
-      console.log(data);
-      _this5.messages = data;
-    });
-    console.log("chat.".concat(this.user_id, ".").concat(this.chat_id)); // Registered client on public channel to listen to MessageSent event
-
-    Echo["private"]("chat.".concat(this.user_id, ".").concat(this.chat_id)).listen('ChatMessage', function (_ref6) {
-      var message = _ref6.message;
-
-      _this5.messages.push(message);
-    });
-    Echo["private"]("video.".concat(this.user_id, ".").concat(this.chat_id)).listen('VideoMessage', function (_ref7) {
-      var message = _ref7.message;
-      console.log('video', message); // this.$refs.video.srcObject = message
-      // this.messages.push(message);
-
-      var offer = JSON.parse(message);
+    },
+    sendOfferAudio: function sendOfferAudio() {
+      var id = this.chat_id;
+      pc.createOffer(offerOptions).then(function (offer) {
+        return pc.setLocalDescription(offer);
+      }).then(function () {
+        axios.post('/chatSend/' + id, {
+          video: JSON.stringify(pc.localDescription),
+          action: 'offer_audio'
+        }).then(function (_ref5) {
+          var data = _ref5.data;
+          console.log('send offer');
+        });
+      });
+    },
+    sendAnswer: function sendAnswer(offer) {
+      var id = this.chat_id;
 
       var errorHandler = function errorHandler(err) {
         console.error('error', err);
@@ -2199,14 +2179,186 @@ pc.onaddstream = function (obj) {
         pc.createAnswer(function (answer) {
           pc.setLocalDescription(answer, function () {
             axios.post('/chatSend/' + id, {
-              video: JSON.stringify(pc.localDescription)
-            }).then(function (_ref8) {
-              var data = _ref8.data;
-              console.log('send 23');
+              video: JSON.stringify(pc.localDescription),
+              action: 'answer'
+            }).then(function (_ref6) {
+              var data = _ref6.data;
+              console.log(pc.localDescription);
             });
           }, errorHandler);
         }, errorHandler);
       });
+    },
+    sendAnswerAudio: function sendAnswerAudio(offer) {
+      var id = this.chat_id;
+
+      var errorHandler = function errorHandler(err) {
+        console.error('error', err);
+      };
+
+      pc.setRemoteDescription(new RTCSessionDescription(offer), function () {
+        pc.createAnswer(function (answer) {
+          pc.setLocalDescription(answer, function () {
+            axios.post('/chatSend/' + id, {
+              video: JSON.stringify(pc.localDescription),
+              action: 'answer_audio'
+            }).then(function (_ref7) {
+              var data = _ref7.data;
+              console.log(pc.localDescription);
+            });
+          }, errorHandler);
+        }, errorHandler);
+      });
+    },
+    openCamera: function openCamera() {
+      var _this4 = this;
+
+      navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      }).then(function (stream) {
+        streams = stream;
+        stream.getTracks().forEach(function (track) {
+          console.log('getTracks', track, stream);
+          pc.addTrack(track, stream);
+        });
+        var video = document.getElementById('video');
+        video.srcObject = stream;
+        localStream = stream;
+      }).then(function () {
+        _this4.sendOffer();
+      });
+    },
+    openCamera2: function openCamera2() {
+      var _this5 = this;
+
+      navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      }).then(function (stream) {
+        // this.timer();
+        streams = stream;
+        stream.getTracks().forEach(function (track) {
+          console.log('getTracks', track, stream);
+          pc.addTrack(track, stream);
+        });
+        var video = document.getElementById('video');
+        video.srcObject = stream;
+        localStream = stream;
+
+        if (!connect) {
+          _this5.sendOffer();
+
+          connect = true;
+        } else {
+          connect = true;
+        }
+      })["catch"](function (err) {
+        console.log('err', err);
+      });
+    },
+    openAudio: function openAudio() {
+      var _this6 = this;
+
+      navigator.mediaDevices.getUserMedia({
+        video: false,
+        audio: true
+      }).then(function (stream) {
+        streams = stream;
+        stream.getTracks().forEach(function (track) {
+          console.log('getTracks', track, stream);
+          pc.addTrack(track, stream);
+        });
+      }).then(function () {
+        _this6.sendOfferAudio();
+      });
+    },
+    openAudio2: function openAudio2() {
+      var _this7 = this;
+
+      navigator.mediaDevices.getUserMedia({
+        video: false,
+        audio: true
+      }).then(function (stream) {
+        // this.timer();
+        streams = stream;
+        stream.getTracks().forEach(function (track) {
+          console.log('getTracks', track, stream);
+          pc.addTrack(track, stream);
+        });
+
+        if (!connect) {
+          _this7.sendOfferAudio();
+
+          connect = true;
+        } else {
+          connect = true;
+        }
+      })["catch"](function (err) {
+        console.log('err', err);
+      });
+    }
+  },
+  created: function created() {
+    var _this8 = this;
+
+    var id = this.chat_id;
+    axios.get('/chatGet/' + this.chat_id).then(function (_ref8) {
+      var data = _ref8.data;
+      console.log(data);
+      _this8.messages = data;
+    });
+    console.log("chat.".concat(this.user_id, ".").concat(this.chat_id)); // Registered client on public channel to listen to MessageSent event
+
+    Echo["private"]("chat.".concat(this.user_id, ".").concat(this.chat_id)).listen('ChatMessage', function (_ref9) {
+      var message = _ref9.message;
+
+      _this8.messages.push(message);
+    });
+    Echo["private"]("video.".concat(this.user_id, ".").concat(this.chat_id)).listen('VideoMessage', function (_ref10) {
+      var message = _ref10.message;
+      console.log('video', message, pc);
+
+      switch (message[1]) {
+        case 'offer':
+          console.log('get offer');
+
+          _this8.openCamera2();
+
+          var offer = JSON.parse(message[0]);
+
+          _this8.sendAnswer(offer);
+
+          break;
+
+        case 'offer_audio':
+          console.log('get offer audio');
+
+          _this8.openAudio();
+
+          var offer = JSON.parse(message[0]);
+
+          _this8.sendAnswerAudio(offer);
+
+          break;
+
+        case 'answer':
+          pc.setRemoteDescription(JSON.parse(message[0])).then(function (data) {
+            console.log(pc);
+          });
+
+          _this8.openCamera2();
+
+        case 'answer_audio':
+          pc.setRemoteDescription(JSON.parse(message[0])).then(function (data) {
+            console.log(pc);
+          });
+
+          _this8.openAudio2();
+
+      } // this.$refs.video.srcObject = message[0]
+      // this.messages.push(message);
+
     });
   }
 });
@@ -49566,7 +49718,32 @@ var render = function() {
       "div",
       [
         _vm._l(_vm.messages, function(message) {
-          return _c("p", [_vm._v(_vm._s(message.content))])
+          return _c(
+            "p",
+            [
+              message.type == "file"
+                ? [
+                    _c(
+                      "a",
+                      {
+                        attrs: {
+                          target: "_blank",
+                          href: "/storage/" + message.content
+                        }
+                      },
+                      [_vm._v(" Загружен файл " + _vm._s(message.content))]
+                    )
+                  ]
+                : [
+                    _vm._v(
+                      "\n                " +
+                        _vm._s(message.content) +
+                        "\n            "
+                    )
+                  ]
+            ],
+            2
+          )
         }),
         _vm._v(" "),
         _c("input", {

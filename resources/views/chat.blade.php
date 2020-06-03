@@ -1,6 +1,7 @@
 @extends('layouts.app')
 <script src="//{{ Request::getHost() }}:6001/socket.io/socket.io.js"></script>
 @section('content')
+    {{asset('storage/file.txt')}}
     <chat-box chat_id={{ $id }} user_id={{ $user_id }}></chat-box>
 
     {{--<div class="container">--}}

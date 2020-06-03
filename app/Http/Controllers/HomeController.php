@@ -88,9 +88,9 @@ class HomeController extends Controller
         $receiver = User::find($chat_id);
 
         if ($request->file()) {
-            $path = $request->file('file')->store('file');
+            $path = $request->file('file')->storeAs('public', $request->file('file')->getClientOriginalName());
             $messageData = [
-                'content' => $path, // the content of the message
+                'content' => $request->file('file')->getClientOriginalName(), // the content of the message
                 'to_id' => $receiver->getKey(), // Who should receive the message
                 'type' => 'file'
             ];
@@ -112,7 +112,7 @@ class HomeController extends Controller
 
 
         if ($request->video) {
-            event(new VideoMessage($request->video, $chat_id, $sender->id));
+            event(new VideoMessage([$request->video, $request->action], $chat_id, $sender->id));
         } else {
             $sent = $sender->writes($message)
                 ->to($user)

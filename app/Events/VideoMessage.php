@@ -21,7 +21,6 @@ class VideoMessage implements ShouldBroadcast
 
     public function __construct($message, $chat_id, $user_id)
     {
-        print_r($message);
         $this->message = $message;
         $this->chat_id = $chat_id;
         $this->user_id = $user_id;
