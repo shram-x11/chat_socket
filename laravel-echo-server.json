@@ -1,10 +1,10 @@
 {
-	"authHost": "http://92.53.107.149:80",
+	"authHost": "http://127.0.0.1:8000",
 	"authEndpoint": "/broadcasting/auth",
 	"clients": [
 		{
-			"appId": "6bc1698d845ee314",
-			"key": "9c92968ac4052ca975be10167a76c8a7"
+			"appId": "e976fc357d1e2a82",
+			"key": "cdc3224a7a02e47ce3c35c1f2b715556"
 		}
 	],
 	"database": "redis",
@@ -17,11 +17,11 @@
 	"devMode": true,
 	"host": null,
 	"port": "6001",
-	"protocol": "https",
+	"protocol": "http",
 	"socketio": {},
 	"secureOptions": 67108864,
-	"sslCertPath": "/var/www/httpd-cert/www-root/327901-cw97605.tmweb.ru_le1.crt",
-	"sslKeyPath": "/var/www/httpd-cert/www-root/327901-cw97605.tmweb.ru_le1.key",
+	"sslCertPath": "",
+	"sslKeyPath": "",
 	"sslCertChainPath": "",
 	"sslPassphrase": "",
 	"subscribers": {

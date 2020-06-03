@@ -51,7 +51,7 @@
 	var seconds = 0;
 	var timer;
 
-	var pc = new RTCPeerConnection();
+	var pc;
 	var offers;
 
 	var streams;
@@ -81,7 +81,7 @@
 				incomingCall: false,
 				offer: '',
 				initial: false,
-				type: {video: false, audio: false},
+				type: {video: false, audio: true},
 			}
 		},
 		computed: {
@@ -136,7 +136,6 @@
 
 			},
 			answerCall() {
-				this.initial = true;
 				this.sendAnswer(this.offer)
 			},
 			startAudioCallToUser() {
@@ -197,8 +196,8 @@
 				});
 			},
 			openCamera() {
-				navigator.mediaDevices.getUserMedia({video: true, audio: false}).then(stream => {
-					streams = stream;
+				navigator.mediaDevices.getUserMedia(this.type).then(stream => {
+					console.log(stream.getTracks());
 					stream.getTracks().forEach(function (track) {
 						console.log('getTracks', track, stream);
 						pc.addTrack(track, stream);
@@ -208,7 +207,10 @@
 					var video = document.getElementById('video');
 					video.srcObject = stream
 					localStream = stream;
+					// if (this.initial) {
 					this.sendOffer()
+					// }
+
 				}).then(() => {
 
 				});
@@ -217,6 +219,8 @@
 		}
 		,
 		created() {
+			pc = new RTCPeerConnection();
+			console.log(pc);
 			var id = this.chat_id;
 			axios.get('/chatGet/' + this.chat_id).then(({data}) => {
 				console.log(data);
@@ -243,7 +247,7 @@
 						this.sendAnswer(JSON.parse(message[0]));
 						break;
 					case 'answer':
-						console.log('answer', message[0])
+						console.log('answer', JSON.parse(message[0]))
 						pc.setRemoteDescription(JSON.parse(message[0]))
 							.then(data => {
 								console.log(pc);
@@ -264,14 +268,24 @@
 					// this.openCamera();
 				}
 			};
-			pc.ontrack = event => {
-				document.getElementById("localVideo").srcObject = event.streams[0];
-				// document.getElementById("hangup-button").disabled = false;
-				console.log('event', event.streams)
+			// pc.ontrack = event => {
+			// 	document.getElementById("localVideo").srcObject = event.streams[0];
+			// 	// document.getElementById("hangup-button").disabled = false;
+			// 	console.log('event', event.streams)
+			//
+			// };
+			pc.ontrack = ev => {
+				if (ev.streams && ev.streams[0]) {
+					document.getElementById("localVideo").srcObject = ev.streams[0];
+				} else {
+					let inboundStream = new MediaStream(ev.track);
+					document.getElementById("localVideo").srcObject = inboundStream;
+				}
 				if (!this.initial) {
 					this.openCamera();
+
 				}
-			};
+			}
 		}
 		,
 	}

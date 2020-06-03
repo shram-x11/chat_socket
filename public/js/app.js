@@ -2038,7 +2038,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 var seconds = 0;
 var timer;
-var pc = new RTCPeerConnection();
+var pc;
 var offers;
 var streams;
 var localStream;
@@ -2065,7 +2065,7 @@ var connect = false; // pc.onaddstream = function (event) {
       initial: false,
       type: {
         video: false,
-        audio: false
+        audio: true
       }
     };
   },
@@ -2137,7 +2137,6 @@ var connect = false; // pc.onaddstream = function (event) {
       // this.sendOffer();
     },
     answerCall: function answerCall() {
-      this.initial = true;
       this.sendAnswer(this.offer);
     },
     startAudioCallToUser: function startAudioCallToUser() {
@@ -2205,11 +2204,8 @@ var connect = false; // pc.onaddstream = function (event) {
     openCamera: function openCamera() {
       var _this4 = this;
 
-      navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false
-      }).then(function (stream) {
-        streams = stream;
+      navigator.mediaDevices.getUserMedia(this.type).then(function (stream) {
+        console.log(stream.getTracks());
         stream.getTracks().forEach(function (track) {
           console.log('getTracks', track, stream);
           pc.addTrack(track, stream);
@@ -2218,15 +2214,18 @@ var connect = false; // pc.onaddstream = function (event) {
 
         var video = document.getElementById('video');
         video.srcObject = stream;
-        localStream = stream;
+        localStream = stream; // if (this.initial) {
 
-        _this4.sendOffer();
+        _this4.sendOffer(); // }
+
       }).then(function () {});
     }
   },
   created: function created() {
     var _this5 = this;
 
+    pc = new RTCPeerConnection();
+    console.log(pc);
     var id = this.chat_id;
     axios.get('/chatGet/' + this.chat_id).then(function (_ref7) {
       var data = _ref7.data;
@@ -2260,7 +2259,7 @@ var connect = false; // pc.onaddstream = function (event) {
           break;
 
         case 'answer':
-          console.log('answer', message[0]);
+          console.log('answer', JSON.parse(message[0]));
           pc.setRemoteDescription(JSON.parse(message[0])).then(function (data) {
             console.log(pc);
           });
@@ -2281,12 +2280,21 @@ var connect = false; // pc.onaddstream = function (event) {
         } // this.openCamera();
 
       }
-    };
+    }; // pc.ontrack = event => {
+    // 	document.getElementById("localVideo").srcObject = event.streams[0];
+    // 	// document.getElementById("hangup-button").disabled = false;
+    // 	console.log('event', event.streams)
+    //
+    // };
 
-    pc.ontrack = function (event) {
-      document.getElementById("localVideo").srcObject = event.streams[0]; // document.getElementById("hangup-button").disabled = false;
 
-      console.log('event', event.streams);
+    pc.ontrack = function (ev) {
+      if (ev.streams && ev.streams[0]) {
+        document.getElementById("localVideo").srcObject = ev.streams[0];
+      } else {
+        var inboundStream = new MediaStream(ev.track);
+        document.getElementById("localVideo").srcObject = inboundStream;
+      }
 
       if (!_this5.initial) {
         _this5.openCamera();
