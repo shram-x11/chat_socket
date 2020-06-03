@@ -2137,7 +2137,7 @@ var connect = false; // pc.onaddstream = function (event) {
       // this.sendOffer();
     },
     answerCall: function answerCall() {
-      this.sendAnswer(this.offer);
+      this.sendAnswer(offers);
     },
     startAudioCallToUser: function startAudioCallToUser() {
       this.type = {
@@ -2247,12 +2247,11 @@ var connect = false; // pc.onaddstream = function (event) {
         case 'offer_request':
           console.log('get offer');
           _this5.incomingCall = true;
-          _this5.offer = JSON.parse(message[0]);
+          offers = JSON.parse(message[0]);
           break;
 
         case 'offer':
-          console.log('get offer');
-          _this5.offer = JSON.parse(message[0]);
+          console.log('get offer'); // this.offer = JSON.parse(message[0]);
 
           _this5.sendAnswer(JSON.parse(message[0]));
 

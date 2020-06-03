@@ -136,7 +136,7 @@
 
 			},
 			answerCall() {
-				this.sendAnswer(this.offer)
+				this.sendAnswer(offers)
 			},
 			startAudioCallToUser() {
 				this.type = {video: false, audio: true};
@@ -239,11 +239,11 @@
 					case 'offer_request':
 						console.log('get offer')
 						this.incomingCall = true;
-						this.offer = JSON.parse(message[0]);
+						offers = JSON.parse(message[0]);
 						break;
 					case 'offer':
 						console.log('get offer')
-						this.offer = JSON.parse(message[0]);
+						// this.offer = JSON.parse(message[0]);
 						this.sendAnswer(JSON.parse(message[0]));
 						break;
 					case 'answer':
