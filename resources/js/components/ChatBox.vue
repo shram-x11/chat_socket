@@ -20,10 +20,10 @@
                 Your browser does not support the video tag.
             </video>
         </div>
-        <button class="btn btn-warning btn-sm pull-right" @click="startVideoCallToUser(2)" type="button">
+        <button class="btn btn-warning btn-sm pull-right" @click="startVideoCallToUser()" type="button">
             <span class="fa fa-video-camera"></span> Video Call
         </button>
-        <button class="btn btn-warning btn-sm pull-right" @click="startAudioCallToUser(2)" type="button">
+        <button class="btn btn-warning btn-sm pull-right" @click="startAudioCallToUser()" type="button">
             <span class="fa fa-video-camera"></span> Audio Call
         </button>
         <button class="btn btn-warning btn-sm pull-right" @click="closeCall(2)" type="button">
@@ -52,6 +52,7 @@
 	var timer;
 
 	var pc = new RTCPeerConnection();
+	var offers;
 
 	var streams;
 	var localStream;
@@ -80,6 +81,7 @@
 				incomingCall: false,
 				offer: '',
 				initial: false,
+				type: {video: false, audio: false},
 			}
 		},
 		computed: {
@@ -126,6 +128,7 @@
 				})
 			},
 			startVideoCallToUser() {
+				this.type = {video: true, audio: false};
 				this.initial = true;
 				this.sendVideoRequest();
 				// this.openCamera();
@@ -133,10 +136,13 @@
 
 			},
 			answerCall() {
+				this.initial = true;
 				this.sendAnswer(this.offer)
 			},
 			startAudioCallToUser() {
-				this.openAudio();
+				this.type = {video: false, audio: true};
+				this.initial = true;
+				this.sendVideoRequest();
 			},
 			sendVideoRequest() {
 				// this.sendOffer();
@@ -171,49 +177,18 @@
 						})
 					})
 			},
-			sendOfferAudio() {
-				var id = this.chat_id;
-				pc.createOffer(offerOptions).then(function (offer) {
-					return pc.setLocalDescription(offer);
-				})
-					.then(function () {
-						axios.post('/chatSend/' + id, {
-							video: JSON.stringify(pc.localDescription),
-							action: 'offer_audio',
-						}).then(({data}) => {
-							console.log('send offer')
-						})
-					})
-			},
 			sendAnswer(offer) {
 				var id = this.chat_id;
 				var errorHandler = function (err) {
 					console.error('error', err);
 				};
+				console.log('check', offer)
 				pc.setRemoteDescription(new RTCSessionDescription(offer), function () {
 					pc.createAnswer(function (answer) {
 						pc.setLocalDescription(answer, function () {
 							axios.post('/chatSend/' + id, {
 								video: JSON.stringify(pc.localDescription),
 								action: 'answer',
-							}).then(({data}) => {
-								console.log(pc.localDescription)
-							})
-						}, errorHandler);
-					}, errorHandler);
-				});
-			},
-			sendAnswerAudio(offer) {
-				var id = this.chat_id;
-				var errorHandler = function (err) {
-					console.error('error', err);
-				};
-				pc.setRemoteDescription(new RTCSessionDescription(offer), function () {
-					pc.createAnswer(function (answer) {
-						pc.setLocalDescription(answer, function () {
-							axios.post('/chatSend/' + id, {
-								video: JSON.stringify(pc.localDescription),
-								action: 'answer_audio',
 							}).then(({data}) => {
 								console.log(pc.localDescription)
 							})
@@ -238,59 +213,7 @@
 
 				});
 
-
 			},
-			openCamera2() {
-				navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
-					// this.timer();
-					streams = stream;
-					stream.getTracks().forEach(function (track) {
-						console.log('getTracks', track, stream);
-						pc.addTrack(track, stream);
-					});
-					var video = document.getElementById('video');
-					video.srcObject = stream
-					localStream = stream;
-					if (!connect) {
-						this.sendOffer()
-						connect = true;
-					} else {
-						connect = true;
-					}
-				}).catch(err => {
-					console.log('err', err)
-				});
-			},
-			openAudio() {
-				navigator.mediaDevices.getUserMedia({video: false, audio: true}).then(stream => {
-					streams = stream;
-					stream.getTracks().forEach(function (track) {
-						console.log('getTracks', track, stream);
-						pc.addTrack(track, stream);
-					});
-				}).then(() => {
-					this.sendOfferAudio()
-				});
-			},
-			openAudio2() {
-				navigator.mediaDevices.getUserMedia({video: false, audio: true}).then(stream => {
-					// this.timer();
-					streams = stream;
-					stream.getTracks().forEach(function (track) {
-						console.log('getTracks', track, stream);
-						pc.addTrack(track, stream);
-					});
-					if (!connect) {
-						this.sendOfferAudio()
-						connect = true;
-					} else {
-						connect = true;
-					}
-				}).catch(err => {
-					console.log('err', err)
-				});
-			},
-
 		}
 		,
 		created() {
@@ -312,35 +235,20 @@
 					case 'offer_request':
 						console.log('get offer')
 						this.incomingCall = true;
-						// this.openCamera2();
 						this.offer = JSON.parse(message[0]);
-						// this.sendAnswer(offer);
 						break;
 					case 'offer':
 						console.log('get offer')
-						// this.openCamera2();
 						this.offer = JSON.parse(message[0]);
-						this.sendAnswer(this.offer);
-						break;
-					case 'offer_audio':
-						console.log('get offer audio')
-						this.openAudio();
-						var offer = JSON.parse(message[0]);
-						this.sendAnswerAudio(offer);
+						this.sendAnswer(JSON.parse(message[0]));
 						break;
 					case 'answer':
-						console.log('anseweqwe')
+						console.log('answer', message[0])
 						pc.setRemoteDescription(JSON.parse(message[0]))
 							.then(data => {
 								console.log(pc);
 							})
 						break;
-					case 'answer_audio':
-						pc.setRemoteDescription(JSON.parse(message[0]))
-							.then(data => {
-								console.log(pc);
-							})
-						this.openAudio2()
 				}
 
 				// this.$refs.video.srcObject = message[0]
