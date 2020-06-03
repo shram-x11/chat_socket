@@ -2175,7 +2175,7 @@ var connect = false; // pc.onaddstream = function (event) {
           action: 'offer_request'
         }).then(function (_ref5) {
           var data = _ref5.data;
-          console.log('send offer');
+          console.log('send request offer');
         });
       });
     },
@@ -2195,7 +2195,7 @@ var connect = false; // pc.onaddstream = function (event) {
               action: 'answer'
             }).then(function (_ref6) {
               var data = _ref6.data;
-              console.log(pc.localDescription);
+              console.log('send answer');
             });
           }, errorHandler);
         }, errorHandler);
@@ -2261,7 +2261,7 @@ var connect = false; // pc.onaddstream = function (event) {
         case 'answer':
           console.log('answer', JSON.parse(message[0]));
           pc.setRemoteDescription(JSON.parse(message[0])).then(function (data) {
-            console.log(pc);
+            console.log('remote setted');
           });
           break;
       } // this.$refs.video.srcObject = message[0]

@@ -172,7 +172,7 @@
 							video: JSON.stringify(pc.localDescription),
 							action: 'offer_request',
 						}).then(({data}) => {
-							console.log('send offer')
+							console.log('send request offer')
 						})
 					})
 			},
@@ -189,7 +189,7 @@
 								video: JSON.stringify(pc.localDescription),
 								action: 'answer',
 							}).then(({data}) => {
-								console.log(pc.localDescription)
+								console.log('send answer')
 							})
 						}, errorHandler);
 					}, errorHandler);
@@ -250,7 +250,7 @@
 						console.log('answer', JSON.parse(message[0]))
 						pc.setRemoteDescription(JSON.parse(message[0]))
 							.then(data => {
-								console.log(pc);
+								console.log('remote setted');
 							})
 						break;
 				}
