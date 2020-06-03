@@ -2033,6 +2033,9 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
 var seconds = 0;
 var timer;
 var pc = new RTCPeerConnection();
@@ -2042,28 +2045,10 @@ var offerOptions = {
   offerToReceiveAudio: 1,
   offerToReceiveVideo: 1
 };
-var connect = false;
-
-pc.onaddstream = function (event) {
-  document.getElementById("localVideo").srcObject = event.stream;
-}; // pc.ontrack = function (event) {
-// 	document.getElementById("localVideo").srcObject = event.streams[0];
-// 	// document.getElementById("hangup-button").disabled = false;
-// 	console.log('event', event.streams)
+var connect = false; // pc.onaddstream = function (event) {
+// 	console.log('addstream')
+// 	document.getElementById("localVideo").srcObject = event.stream;
 // };
-
-
-pc.onconnectionstatechange = function (event) {
-  console.log('state', pc.connectionState);
-
-  if (pc.connectionState == 'connected') {
-    timer = setInterval(function () {
-      seconds = seconds + 1;
-      console.log('time', seconds);
-    }, 1000);
-    timer();
-  }
-};
 
 /* harmony default export */ __webpack_exports__["default"] = ({
   props: ['chat_id', 'user_id'],
@@ -2073,7 +2058,10 @@ pc.onconnectionstatechange = function (event) {
       text: '',
       messages: [],
       file: '',
-      seconds: 0
+      seconds: 0,
+      incomingCall: false,
+      offer: '',
+      initial: false
     };
   },
   computed: {
@@ -2135,10 +2123,19 @@ pc.onconnectionstatechange = function (event) {
       });
     },
     startVideoCallToUser: function startVideoCallToUser() {
-      this.openCamera(); // this.sendOffer();
+      this.initial = true;
+      this.sendVideoRequest(); // this.openCamera();
+      // this.sendOffer();
+    },
+    answerCall: function answerCall() {
+      this.sendAnswer(this.offer);
     },
     startAudioCallToUser: function startAudioCallToUser() {
       this.openAudio();
+    },
+    sendVideoRequest: function sendVideoRequest() {
+      // this.sendOffer();
+      this.sendRequestOffer();
     },
     sendOffer: function sendOffer() {
       var id = this.chat_id;
@@ -2154,6 +2151,20 @@ pc.onconnectionstatechange = function (event) {
         });
       });
     },
+    sendRequestOffer: function sendRequestOffer() {
+      var id = this.chat_id;
+      pc.createOffer(offerOptions).then(function (offer) {
+        return pc.setLocalDescription(offer);
+      }).then(function () {
+        axios.post('/chatSend/' + id, {
+          video: JSON.stringify(pc.localDescription),
+          action: 'offer_request'
+        }).then(function (_ref5) {
+          var data = _ref5.data;
+          console.log('send offer');
+        });
+      });
+    },
     sendOfferAudio: function sendOfferAudio() {
       var id = this.chat_id;
       pc.createOffer(offerOptions).then(function (offer) {
@@ -2162,8 +2173,8 @@ pc.onconnectionstatechange = function (event) {
         axios.post('/chatSend/' + id, {
           video: JSON.stringify(pc.localDescription),
           action: 'offer_audio'
-        }).then(function (_ref5) {
-          var data = _ref5.data;
+        }).then(function (_ref6) {
+          var data = _ref6.data;
           console.log('send offer');
         });
       });
@@ -2181,8 +2192,8 @@ pc.onconnectionstatechange = function (event) {
             axios.post('/chatSend/' + id, {
               video: JSON.stringify(pc.localDescription),
               action: 'answer'
-            }).then(function (_ref6) {
-              var data = _ref6.data;
+            }).then(function (_ref7) {
+              var data = _ref7.data;
               console.log(pc.localDescription);
             });
           }, errorHandler);
@@ -2202,8 +2213,8 @@ pc.onconnectionstatechange = function (event) {
             axios.post('/chatSend/' + id, {
               video: JSON.stringify(pc.localDescription),
               action: 'answer_audio'
-            }).then(function (_ref7) {
-              var data = _ref7.data;
+            }).then(function (_ref8) {
+              var data = _ref8.data;
               console.log(pc.localDescription);
             });
           }, errorHandler);
@@ -2215,19 +2226,21 @@ pc.onconnectionstatechange = function (event) {
 
       navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: true
+        audio: false
       }).then(function (stream) {
         streams = stream;
         stream.getTracks().forEach(function (track) {
           console.log('getTracks', track, stream);
           pc.addTrack(track, stream);
-        });
+        }); // pc.onaddstream = e => video.src = URL.createObjectURL(e.stream);
+        // pc.addStream(stream);
+
         var video = document.getElementById('video');
         video.srcObject = stream;
         localStream = stream;
-      }).then(function () {
+
         _this4.sendOffer();
-      });
+      }).then(function () {});
     },
     openCamera2: function openCamera2() {
       var _this5 = this;
@@ -2303,31 +2316,37 @@ pc.onconnectionstatechange = function (event) {
     var _this8 = this;
 
     var id = this.chat_id;
-    axios.get('/chatGet/' + this.chat_id).then(function (_ref8) {
-      var data = _ref8.data;
+    axios.get('/chatGet/' + this.chat_id).then(function (_ref9) {
+      var data = _ref9.data;
       console.log(data);
       _this8.messages = data;
     });
     console.log("chat.".concat(this.user_id, ".").concat(this.chat_id)); // Registered client on public channel to listen to MessageSent event
 
-    Echo["private"]("chat.".concat(this.user_id, ".").concat(this.chat_id)).listen('ChatMessage', function (_ref9) {
-      var message = _ref9.message;
+    Echo["private"]("chat.".concat(this.user_id, ".").concat(this.chat_id)).listen('ChatMessage', function (_ref10) {
+      var message = _ref10.message;
 
       _this8.messages.push(message);
     });
-    Echo["private"]("video.".concat(this.user_id, ".").concat(this.chat_id)).listen('VideoMessage', function (_ref10) {
-      var message = _ref10.message;
+    Echo["private"]("video.".concat(this.user_id, ".").concat(this.chat_id)).listen('VideoMessage', function (_ref11) {
+      var message = _ref11.message;
       console.log('video', message, pc);
 
       switch (message[1]) {
-        case 'offer':
+        case 'offer_request':
           console.log('get offer');
+          _this8.incomingCall = true; // this.openCamera2();
 
-          _this8.openCamera2();
+          _this8.offer = JSON.parse(message[0]); // this.sendAnswer(offer);
 
-          var offer = JSON.parse(message[0]);
+          break;
 
-          _this8.sendAnswer(offer);
+        case 'offer':
+          console.log('get offer'); // this.openCamera2();
+
+          _this8.offer = JSON.parse(message[0]);
+
+          _this8.sendAnswer(_this8.offer);
 
           break;
 
@@ -2343,11 +2362,11 @@ pc.onconnectionstatechange = function (event) {
           break;
 
         case 'answer':
+          console.log('anseweqwe');
           pc.setRemoteDescription(JSON.parse(message[0])).then(function (data) {
             console.log(pc);
           });
-
-          _this8.openCamera2();
+          break;
 
         case 'answer_audio':
           pc.setRemoteDescription(JSON.parse(message[0])).then(function (data) {
@@ -2360,6 +2379,29 @@ pc.onconnectionstatechange = function (event) {
       // this.messages.push(message);
 
     });
+
+    pc.onconnectionstatechange = function (event) {
+      console.log('state', pc.connectionState);
+
+      if (pc.connectionState == 'connected') {
+        console.log('aeeeee');
+
+        if (_this8.initial) {
+          _this8.openCamera();
+        } // this.openCamera();
+
+      }
+    };
+
+    pc.ontrack = function (event) {
+      document.getElementById("localVideo").srcObject = event.streams[0]; // document.getElementById("hangup-button").disabled = false;
+
+      console.log('event', event.streams);
+
+      if (!_this8.initial) {
+        _this8.openCamera();
+      }
+    };
   }
 });
 
@@ -49855,6 +49897,23 @@ var render = function() {
       [
         _c("span", { staticClass: "fa fa-video-camera" }),
         _vm._v(" End Call\n    ")
+      ]
+    ),
+    _vm._v(" "),
+    _c(
+      "button",
+      {
+        staticClass: "btn btn-warning btn-sm pull-right",
+        attrs: { disabled: !_vm.incomingCall, type: "button" },
+        on: {
+          click: function($event) {
+            return _vm.answerCall()
+          }
+        }
+      },
+      [
+        _c("span", { staticClass: "fa fa-video-camera" }),
+        _vm._v(" Answer Call\n    ")
       ]
     ),
     _vm._v(" "),

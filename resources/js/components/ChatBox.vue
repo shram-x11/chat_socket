@@ -29,6 +29,9 @@
         <button class="btn btn-warning btn-sm pull-right" @click="closeCall(2)" type="button">
             <span class="fa fa-video-camera"></span> End Call
         </button>
+        <button class="btn btn-warning btn-sm pull-right" @click="answerCall()" :disabled="!incomingCall" type="button">
+            <span class="fa fa-video-camera"></span> Answer Call
+        </button>
         <div class="card card-default">
             <div class="card-body">
                 <div class="row">
@@ -57,24 +60,11 @@
 		offerToReceiveVideo: 1
 	};
 	var connect = false;
-	pc.onaddstream = function (event) {
-		document.getElementById("localVideo").srcObject = event.stream;
-	};
-	// pc.ontrack = function (event) {
-	// 	document.getElementById("localVideo").srcObject = event.streams[0];
-	// 	// document.getElementById("hangup-button").disabled = false;
-	// 	console.log('event', event.streams)
+	// pc.onaddstream = function (event) {
+	// 	console.log('addstream')
+	// 	document.getElementById("localVideo").srcObject = event.stream;
 	// };
-	pc.onconnectionstatechange = function (event) {
-		console.log('state', pc.connectionState)
-		if (pc.connectionState == 'connected') {
-			timer = setInterval(function () {
-				seconds = seconds + 1;
-				console.log('time', seconds);
-			}, 1000)
-			timer();
-		}
-	}
+
 	export default {
 		props: [
 			'chat_id',
@@ -87,6 +77,9 @@
 				messages: [],
 				file: '',
 				seconds: 0,
+				incomingCall: false,
+				offer: '',
+				initial: false,
 			}
 		},
 		computed: {
@@ -133,12 +126,22 @@
 				})
 			},
 			startVideoCallToUser() {
-				this.openCamera();
+				this.initial = true;
+				this.sendVideoRequest();
+				// this.openCamera();
 				// this.sendOffer();
 
 			},
+			answerCall() {
+				this.sendAnswer(this.offer)
+			},
 			startAudioCallToUser() {
 				this.openAudio();
+			},
+			sendVideoRequest() {
+				// this.sendOffer();
+				this.sendRequestOffer();
+
 			},
 			sendOffer() {
 				var id = this.chat_id;
@@ -149,6 +152,20 @@
 						axios.post('/chatSend/' + id, {
 							video: JSON.stringify(pc.localDescription),
 							action: 'offer',
+						}).then(({data}) => {
+							console.log('send offer')
+						})
+					})
+			},
+			sendRequestOffer() {
+				var id = this.chat_id;
+				pc.createOffer(offerOptions).then(function (offer) {
+					return pc.setLocalDescription(offer);
+				})
+					.then(function () {
+						axios.post('/chatSend/' + id, {
+							video: JSON.stringify(pc.localDescription),
+							action: 'offer_request',
 						}).then(({data}) => {
 							console.log('send offer')
 						})
@@ -205,18 +222,22 @@
 				});
 			},
 			openCamera() {
-				navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
+				navigator.mediaDevices.getUserMedia({video: true, audio: false}).then(stream => {
 					streams = stream;
 					stream.getTracks().forEach(function (track) {
 						console.log('getTracks', track, stream);
 						pc.addTrack(track, stream);
 					});
+					// pc.onaddstream = e => video.src = URL.createObjectURL(e.stream);
+					// pc.addStream(stream);
 					var video = document.getElementById('video');
 					video.srcObject = stream
 					localStream = stream;
-				}).then(() => {
 					this.sendOffer()
+				}).then(() => {
+
 				});
+
 
 			},
 			openCamera2() {
@@ -288,11 +309,18 @@
 			Echo.private(`video.${this.user_id}.${this.chat_id}`).listen('VideoMessage', ({message}) => {
 				console.log('video', message, pc)
 				switch (message[1]) {
+					case 'offer_request':
+						console.log('get offer')
+						this.incomingCall = true;
+						// this.openCamera2();
+						this.offer = JSON.parse(message[0]);
+						// this.sendAnswer(offer);
+						break;
 					case 'offer':
 						console.log('get offer')
-						this.openCamera2();
-						var offer = JSON.parse(message[0]);
-						this.sendAnswer(offer);
+						// this.openCamera2();
+						this.offer = JSON.parse(message[0]);
+						this.sendAnswer(this.offer);
 						break;
 					case 'offer_audio':
 						console.log('get offer audio')
@@ -301,11 +329,12 @@
 						this.sendAnswerAudio(offer);
 						break;
 					case 'answer':
+						console.log('anseweqwe')
 						pc.setRemoteDescription(JSON.parse(message[0]))
 							.then(data => {
 								console.log(pc);
 							})
-						this.openCamera2()
+						break;
 					case 'answer_audio':
 						pc.setRemoteDescription(JSON.parse(message[0]))
 							.then(data => {
@@ -316,9 +345,25 @@
 
 				// this.$refs.video.srcObject = message[0]
 				// this.messages.push(message);
-
-
 			});
+			pc.onconnectionstatechange = event => {
+				console.log('state', pc.connectionState)
+				if (pc.connectionState == 'connected') {
+					console.log('aeeeee')
+					if (this.initial) {
+						this.openCamera();
+					}
+					// this.openCamera();
+				}
+			};
+			pc.ontrack = event => {
+				document.getElementById("localVideo").srcObject = event.streams[0];
+				// document.getElementById("hangup-button").disabled = false;
+				console.log('event', event.streams)
+				if (!this.initial) {
+					this.openCamera();
+				}
+			};
 		}
 		,
 	}
