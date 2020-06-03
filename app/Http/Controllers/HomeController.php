@@ -76,8 +76,13 @@ class HomeController extends Controller
         $userB = User::find($id);
         $messagesA = $userA->sent()->to($userB)->get();
         $messagesB = $userA->received()->from($userB)->get();
-        $messages = $messagesA->merge($messagesB)->sortBy('id');
+        $messages = $messagesA->merge($messagesB)->sortBy('id')->toArray();
+        $jsonOutput = [];
+        foreach($messages as $message){
+            $jsonOutput[] = $message;
+        }
 
+        return response()->json($jsonOutput);
         return $messages;
 
 
