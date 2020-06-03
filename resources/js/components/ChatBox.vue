@@ -219,7 +219,37 @@
 		}
 		,
 		created() {
-			pc = new RTCPeerConnection();
+			const iceConfiguration = {
+				iceServers: [
+					{
+						url: 'turn:numb.viagenie.ca',
+						credential: 'muazkh',
+						username: 'webrtc@live.com'
+					},
+					{
+						url: 'turn:192.158.29.39:3478?transport=udp',
+						credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+						username: '28224511:1379330808'
+					},
+					{
+						url: 'turn:192.158.29.39:3478?transport=tcp',
+						credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+						username: '28224511:1379330808'
+					},
+					{
+						url: 'turn:turn.bistri.com:80',
+						credential: 'homeo',
+						username: 'homeo'
+					},
+					{
+						url: 'turn:turn.anyfirewall.com:443?transport=tcp',
+						credential: 'webrtc',
+						username: 'webrtc'
+					}
+				]
+			}
+
+			pc = new RTCPeerConnection(iceConfiguration);
 			console.log(pc);
 			var id = this.chat_id;
 			axios.get('/chatGet/' + this.chat_id).then(({data}) => {
@@ -251,6 +281,9 @@
 						pc.setRemoteDescription(JSON.parse(message[0]))
 							.then(data => {
 								console.log('remote setted');
+								if (pc.connectionState != 'connected') {
+									this.sendOffer();
+								}
 							})
 						break;
 				}
