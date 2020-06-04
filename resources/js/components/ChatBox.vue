@@ -68,6 +68,7 @@
 
 	function clock() {
 		myTimer = setInterval(myClock, 1000);
+
 		function myClock() {
 			seconds = seconds + 1;
 		}
@@ -106,9 +107,12 @@
 					this.messages.push(data);
 					console.log('send close', data)
 				})
+				axios.post('/chatSend/' + this.chat_id, {video: '', action: 'close'}).then(({data}) => {
+					document.location.reload(true);
+				})
 				clearInterval(myTimer);
 				seconds = 0;
-				
+
 
 			},
 			onFileChange() {
@@ -305,6 +309,10 @@
 						console.log('get offer')
 						// this.offer = JSON.parse(message[0]);
 						this.sendAnswer(JSON.parse(message[0]));
+						break;
+					case 'close':
+						console.log('get offer')
+						document.location.reload(true);
 						break;
 					case 'answer':
 						console.log('answer', JSON.parse(message[0]))
