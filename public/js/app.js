@@ -2064,7 +2064,7 @@ var connect = false; // pc.onaddstream = function (event) {
       offer: '',
       initial: false,
       type: {
-        video: false,
+        video: true,
         audio: true
       }
     };
@@ -2130,7 +2130,7 @@ var connect = false; // pc.onaddstream = function (event) {
     startVideoCallToUser: function startVideoCallToUser() {
       this.type = {
         video: true,
-        audio: false
+        audio: true
       };
       this.initial = true;
       this.sendVideoRequest(); // this.openCamera();
@@ -2285,8 +2285,7 @@ var connect = false; // pc.onaddstream = function (event) {
           pc.setRemoteDescription(JSON.parse(message[0])).then(function (data) {
             console.log('remote setted');
 
-            if (pc.connectionState != 'connected') {
-              _this5.sendOffer();
+            if (pc.connectionState == 'new') {// this.sendOffer();
             }
           });
           break;

@@ -81,7 +81,7 @@
 				incomingCall: false,
 				offer: '',
 				initial: false,
-				type: {video: false, audio: true},
+				type: {video: true, audio: true},
 			}
 		},
 		computed: {
@@ -128,7 +128,7 @@
 				})
 			},
 			startVideoCallToUser() {
-				this.type = {video: true, audio: false};
+				this.type = {video: true, audio: true};
 				this.initial = true;
 				this.sendVideoRequest();
 				// this.openCamera();
@@ -281,8 +281,8 @@
 						pc.setRemoteDescription(JSON.parse(message[0]))
 							.then(data => {
 								console.log('remote setted');
-								if (pc.connectionState != 'connected') {
-									this.sendOffer();
+								if (pc.connectionState == 'new') {
+									// this.sendOffer();
 								}
 							})
 						break;
