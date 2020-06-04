@@ -49,11 +49,11 @@
 
 <script>
 	var seconds = 0;
-	var timer;
+	var myTimer;
 
 	var pc;
 	var offers;
-    var first = true;
+	var first = true;
 	var streams;
 	var localStream;
 	const offerOptions = {
@@ -65,6 +65,13 @@
 	// 	console.log('addstream')
 	// 	document.getElementById("localVideo").srcObject = event.stream;
 	// };
+
+	function clock() {
+		myTimer = setInterval(myClock, 1000);
+		function myClock() {
+			seconds = seconds + 1;
+		}
+	}
 
 	export default {
 		props: [
@@ -94,13 +101,14 @@
 				streams.getTracks().forEach(function (track) {
 					track.stop();
 				});
-				pc.close()
+				// pc.close()
 				axios.post('/chatSend/' + this.chat_id, {message: 'Звонок длительностью ' + seconds + 'с',}).then(({data}) => {
 					this.messages.push(data);
 					console.log('send close', data)
 				})
-				clearInterval(timer);
+				clearInterval(myTimer);
 				seconds = 0;
+				
 
 			},
 			onFileChange() {
@@ -141,7 +149,7 @@
 			startAudioCallToUser() {
 				this.type = {video: false, audio: true};
 				this.initial = true;
-				this.sendVideoRequest();
+				this.sendRequestOfferAudio();
 			},
 			sendVideoRequest() {
 				// this.sendOffer();
@@ -176,6 +184,20 @@
 						})
 					})
 			},
+			sendRequestOfferAudio() {
+				var id = this.chat_id;
+				pc.createOffer(offerOptions).then(function (offer) {
+					return pc.setLocalDescription(offer);
+				})
+					.then(function () {
+						axios.post('/chatSend/' + id, {
+							video: JSON.stringify(pc.localDescription),
+							action: 'offer_request_audio',
+						}).then(({data}) => {
+							console.log('send request offer')
+						})
+					})
+			},
 			sendAnswer(offer) {
 				var id = this.chat_id;
 				var errorHandler = function (err) {
@@ -198,6 +220,7 @@
 			openCamera() {
 				navigator.mediaDevices.getUserMedia(this.type).then(stream => {
 					console.log(stream.getTracks());
+					streams = stream;
 					stream.getTracks().forEach(function (track) {
 						console.log('getTracks', track, stream);
 						pc.addTrack(track, stream);
@@ -209,7 +232,7 @@
 					localStream = stream;
 					if (first) {
 						this.sendOffer()
-                      first = false;
+						first = false;
 					}
 
 				}).then(() => {
@@ -250,7 +273,7 @@
 				]
 			}
 
-			pc = new RTCPeerConnection(iceConfiguration);
+			pc = new RTCPeerConnection();
 			console.log(pc);
 			var id = this.chat_id;
 			axios.get('/chatGet/' + this.chat_id).then(({data}) => {
@@ -269,6 +292,12 @@
 				switch (message[1]) {
 					case 'offer_request':
 						console.log('get offer')
+						this.incomingCall = true;
+						offers = JSON.parse(message[0]);
+						break;
+					case 'offer_request_audio':
+						this.type = {video: false, audio: true};
+						console.log('get offer audio')
 						this.incomingCall = true;
 						offers = JSON.parse(message[0]);
 						break;
@@ -296,6 +325,7 @@
 			pc.onconnectionstatechange = event => {
 				console.log('state', pc.connectionState)
 				if (pc.connectionState == 'connected') {
+					clock();
 					console.log('aeeeee')
 					if (this.initial) {
 						this.openCamera();

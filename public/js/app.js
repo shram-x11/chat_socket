@@ -2037,7 +2037,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 var seconds = 0;
-var timer;
+var myTimer;
 var pc;
 var offers;
 var first = true;
@@ -2051,6 +2051,14 @@ var connect = false; // pc.onaddstream = function (event) {
 // 	console.log('addstream')
 // 	document.getElementById("localVideo").srcObject = event.stream;
 // };
+
+function clock() {
+  myTimer = setInterval(myClock, 1000);
+
+  function myClock() {
+    seconds = seconds + 1;
+  }
+}
 
 /* harmony default export */ __webpack_exports__["default"] = ({
   props: ['chat_id', 'user_id'],
@@ -2081,8 +2089,8 @@ var connect = false; // pc.onaddstream = function (event) {
 
       streams.getTracks().forEach(function (track) {
         track.stop();
-      });
-      pc.close();
+      }); // pc.close()
+
       axios.post('/chatSend/' + this.chat_id, {
         message: 'Звонок длительностью ' + seconds + 'с'
       }).then(function (_ref) {
@@ -2092,7 +2100,7 @@ var connect = false; // pc.onaddstream = function (event) {
 
         console.log('send close', data);
       });
-      clearInterval(timer);
+      clearInterval(myTimer);
       seconds = 0;
     },
     onFileChange: function onFileChange() {
@@ -2146,7 +2154,7 @@ var connect = false; // pc.onaddstream = function (event) {
         audio: true
       };
       this.initial = true;
-      this.sendVideoRequest();
+      this.sendRequestOfferAudio();
     },
     sendVideoRequest: function sendVideoRequest() {
       // this.sendOffer();
@@ -2180,6 +2188,20 @@ var connect = false; // pc.onaddstream = function (event) {
         });
       });
     },
+    sendRequestOfferAudio: function sendRequestOfferAudio() {
+      var id = this.chat_id;
+      pc.createOffer(offerOptions).then(function (offer) {
+        return pc.setLocalDescription(offer);
+      }).then(function () {
+        axios.post('/chatSend/' + id, {
+          video: JSON.stringify(pc.localDescription),
+          action: 'offer_request_audio'
+        }).then(function (_ref6) {
+          var data = _ref6.data;
+          console.log('send request offer');
+        });
+      });
+    },
     sendAnswer: function sendAnswer(offer) {
       var id = this.chat_id;
 
@@ -2194,8 +2216,8 @@ var connect = false; // pc.onaddstream = function (event) {
             axios.post('/chatSend/' + id, {
               video: JSON.stringify(pc.localDescription),
               action: 'answer'
-            }).then(function (_ref6) {
-              var data = _ref6.data;
+            }).then(function (_ref7) {
+              var data = _ref7.data;
               console.log('send answer');
             });
           }, errorHandler);
@@ -2207,6 +2229,7 @@ var connect = false; // pc.onaddstream = function (event) {
 
       navigator.mediaDevices.getUserMedia(this.type).then(function (stream) {
         console.log(stream.getTracks());
+        streams = stream;
         stream.getTracks().forEach(function (track) {
           console.log('getTracks', track, stream);
           pc.addTrack(track, stream);
@@ -2251,28 +2274,38 @@ var connect = false; // pc.onaddstream = function (event) {
         username: 'webrtc'
       }]
     };
-    pc = new RTCPeerConnection(iceConfiguration);
+    pc = new RTCPeerConnection();
     console.log(pc);
     var id = this.chat_id;
-    axios.get('/chatGet/' + this.chat_id).then(function (_ref7) {
-      var data = _ref7.data;
+    axios.get('/chatGet/' + this.chat_id).then(function (_ref8) {
+      var data = _ref8.data;
       console.log(data);
       _this5.messages = data;
     });
     console.log("chat.".concat(this.user_id, ".").concat(this.chat_id)); // Registered client on public channel to listen to MessageSent event
 
-    Echo["private"]("chat.".concat(this.user_id, ".").concat(this.chat_id)).listen('ChatMessage', function (_ref8) {
-      var message = _ref8.message;
+    Echo["private"]("chat.".concat(this.user_id, ".").concat(this.chat_id)).listen('ChatMessage', function (_ref9) {
+      var message = _ref9.message;
 
       _this5.messages.push(message);
     });
-    Echo["private"]("video.".concat(this.user_id, ".").concat(this.chat_id)).listen('VideoMessage', function (_ref9) {
-      var message = _ref9.message;
+    Echo["private"]("video.".concat(this.user_id, ".").concat(this.chat_id)).listen('VideoMessage', function (_ref10) {
+      var message = _ref10.message;
       console.log('video', message, pc);
 
       switch (message[1]) {
         case 'offer_request':
           console.log('get offer');
+          _this5.incomingCall = true;
+          offers = JSON.parse(message[0]);
+          break;
+
+        case 'offer_request_audio':
+          _this5.type = {
+            video: false,
+            audio: true
+          };
+          console.log('get offer audio');
           _this5.incomingCall = true;
           offers = JSON.parse(message[0]);
           break;
@@ -2305,6 +2338,7 @@ var connect = false; // pc.onaddstream = function (event) {
       console.log('state', pc.connectionState);
 
       if (pc.connectionState == 'connected') {
+        clock();
         console.log('aeeeee');
 
         if (_this5.initial) {
