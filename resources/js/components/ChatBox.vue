@@ -53,7 +53,7 @@
 
 	var pc;
 	var offers;
-
+    var first = true;
 	var streams;
 	var localStream;
 	const offerOptions = {
@@ -207,9 +207,10 @@
 					var video = document.getElementById('video');
 					video.srcObject = stream
 					localStream = stream;
-					// if (this.initial) {
-					this.sendOffer()
-					// }
+					if (first) {
+						this.sendOffer()
+                      first = false;
+					}
 
 				}).then(() => {
 
@@ -282,7 +283,8 @@
 							.then(data => {
 								console.log('remote setted');
 								if (pc.connectionState == 'new') {
-									// this.sendOffer();
+									console.log('reconn')
+									this.sendOffer();
 								}
 							})
 						break;

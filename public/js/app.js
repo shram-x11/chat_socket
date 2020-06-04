@@ -2040,6 +2040,7 @@ var seconds = 0;
 var timer;
 var pc;
 var offers;
+var first = true;
 var streams;
 var localStream;
 var offerOptions = {
@@ -2214,10 +2215,13 @@ var connect = false; // pc.onaddstream = function (event) {
 
         var video = document.getElementById('video');
         video.srcObject = stream;
-        localStream = stream; // if (this.initial) {
+        localStream = stream;
 
-        _this4.sendOffer(); // }
+        if (first) {
+          _this4.sendOffer();
 
+          first = false;
+        }
       }).then(function () {});
     }
   },
@@ -2285,7 +2289,10 @@ var connect = false; // pc.onaddstream = function (event) {
           pc.setRemoteDescription(JSON.parse(message[0])).then(function (data) {
             console.log('remote setted');
 
-            if (pc.connectionState == 'new') {// this.sendOffer();
+            if (pc.connectionState == 'new') {
+              console.log('reconn');
+
+              _this5.sendOffer();
             }
           });
           break;
