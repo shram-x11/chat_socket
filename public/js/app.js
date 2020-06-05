@@ -2100,6 +2100,13 @@ function clock() {
 
         console.log('send close', data);
       });
+      axios.post('/chatSend/' + this.chat_id, {
+        video: 's',
+        action: 'close'
+      }).then(function (_ref2) {
+        var data = _ref2.data;
+        document.location.reload(true);
+      });
       clearInterval(myTimer);
       seconds = 0;
     },
@@ -2115,8 +2122,8 @@ function clock() {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
-      }).then(function (_ref2) {
-        var data = _ref2.data;
+      }).then(function (_ref3) {
+        var data = _ref3.data;
         console.log(_this2.messages);
 
         _this2.messages.push(data);
@@ -2127,8 +2134,8 @@ function clock() {
 
       axios.post('/chatSend/' + this.chat_id, {
         message: this.text
-      }).then(function (_ref3) {
-        var data = _ref3.data;
+      }).then(function (_ref4) {
+        var data = _ref4.data;
 
         _this3.messages.push(data);
 
@@ -2168,8 +2175,8 @@ function clock() {
         axios.post('/chatSend/' + id, {
           video: JSON.stringify(pc.localDescription),
           action: 'offer'
-        }).then(function (_ref4) {
-          var data = _ref4.data;
+        }).then(function (_ref5) {
+          var data = _ref5.data;
           console.log('send offer');
         });
       });
@@ -2182,8 +2189,8 @@ function clock() {
         axios.post('/chatSend/' + id, {
           video: JSON.stringify(pc.localDescription),
           action: 'offer_request'
-        }).then(function (_ref5) {
-          var data = _ref5.data;
+        }).then(function (_ref6) {
+          var data = _ref6.data;
           console.log('send request offer');
         });
       });
@@ -2196,8 +2203,8 @@ function clock() {
         axios.post('/chatSend/' + id, {
           video: JSON.stringify(pc.localDescription),
           action: 'offer_request_audio'
-        }).then(function (_ref6) {
-          var data = _ref6.data;
+        }).then(function (_ref7) {
+          var data = _ref7.data;
           console.log('send request offer');
         });
       });
@@ -2216,8 +2223,8 @@ function clock() {
             axios.post('/chatSend/' + id, {
               video: JSON.stringify(pc.localDescription),
               action: 'answer'
-            }).then(function (_ref7) {
-              var data = _ref7.data;
+            }).then(function (_ref8) {
+              var data = _ref8.data;
               console.log('send answer');
             });
           }, errorHandler);
@@ -2277,20 +2284,20 @@ function clock() {
     pc = new RTCPeerConnection();
     console.log(pc);
     var id = this.chat_id;
-    axios.get('/chatGet/' + this.chat_id).then(function (_ref8) {
-      var data = _ref8.data;
+    axios.get('/chatGet/' + this.chat_id).then(function (_ref9) {
+      var data = _ref9.data;
       console.log(data);
       _this5.messages = data;
     });
     console.log("chat.".concat(this.user_id, ".").concat(this.chat_id)); // Registered client on public channel to listen to MessageSent event
 
-    Echo["private"]("chat.".concat(this.user_id, ".").concat(this.chat_id)).listen('ChatMessage', function (_ref9) {
-      var message = _ref9.message;
+    Echo["private"]("chat.".concat(this.user_id, ".").concat(this.chat_id)).listen('ChatMessage', function (_ref10) {
+      var message = _ref10.message;
 
       _this5.messages.push(message);
     });
-    Echo["private"]("video.".concat(this.user_id, ".").concat(this.chat_id)).listen('VideoMessage', function (_ref10) {
-      var message = _ref10.message;
+    Echo["private"]("video.".concat(this.user_id, ".").concat(this.chat_id)).listen('VideoMessage', function (_ref11) {
+      var message = _ref11.message;
       console.log('video', message, pc);
 
       switch (message[1]) {
@@ -2315,6 +2322,11 @@ function clock() {
 
           _this5.sendAnswer(JSON.parse(message[0]));
 
+          break;
+
+        case 'close':
+          console.log('get offer');
+          document.location.reload(true);
           break;
 
         case 'answer':

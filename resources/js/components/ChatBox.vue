@@ -107,7 +107,7 @@
 					this.messages.push(data);
 					console.log('send close', data)
 				})
-				axios.post('/chatSend/' + this.chat_id, {video: '', action: 'close'}).then(({data}) => {
+				axios.post('/chatSend/' + this.chat_id, {video: 's', action: 'close'}).then(({data}) => {
 					document.location.reload(true);
 				})
 				clearInterval(myTimer);
